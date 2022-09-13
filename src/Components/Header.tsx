@@ -4,6 +4,7 @@ import { Link, useMatch } from "react-router-dom";
 import { motion, useAnimation, useScroll } from "framer-motion";
 
 const Nav = styled(motion.nav)`
+  z-index: 10;
   display: flex;
   justify-content: space-between;
   align-items: center;
