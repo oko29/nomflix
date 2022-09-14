@@ -1,12 +1,20 @@
 import styled from "styled-components";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll } from "framer-motion";
+import { useState } from "react";
+import { useMatch, useNavigate } from "react-router-dom";
 import { useQuery } from "react-query";
 import { getMovies, IGetMoviesResult } from "../api";
 import { makeImagePath } from "../utils";
-import { useState } from "react";
-import { BsFillPlayFill, BsPlus } from "react-icons/bs";
+
+import {
+  BsFillPlayFill,
+  BsPlus,
+  BsVolumeMute,
+  BsVolumeUp,
+} from "react-icons/bs";
 import { FiChevronDown } from "react-icons/fi";
 import { HiOutlineThumbUp } from "react-icons/hi";
+import { MdOutlineCancel } from "react-icons/md";
 
 const Wrapper = styled.div`
   background: black;
@@ -59,6 +67,7 @@ const Box = styled(motion.div)<{ bgPhoto: string }>`
   background-size: cover;
   background-position: center center;
   font-size: 66px;
+  cursor: pointer;
   &:first-child {
     transform-origin: center left;
   }
@@ -95,6 +104,11 @@ const BtnWrapper = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: 10px;
+  &.modal {
+    position: relative;
+    padding: 20px;
+    top: -180px;
+  }
 `;
 const BtnColumn = styled.div`
   display: flex;
@@ -115,11 +129,83 @@ const Btn = styled.button`
   background-color: transparent;
   cursor: pointer;
   &.play {
-    background-color: whitesmoke;
+    background-color: #e6dddd;
     color: black;
+    &:hover {
+      background-color: white;
+    }
+  }
+  &.modal {
+    width: 100px;
+    border-radius: 10px;
+    font-size: 20px;
+    font-weight: 600;
+  }
+  &.cancel {
+    position: absolute;
+    top: 10px;
+    right: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: none;
+    opacity: 0.6;
+    width: auto;
+    height: auto;
+    font-size: 48px;
+    &:hover {
+      opacity: 1;
+    }
   }
   &:hover {
     border-color: white;
+  }
+`;
+
+const Overlay = styled(motion.div)`
+  position: fixed;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+`;
+
+const BigMovie = styled(motion.div)`
+  position: absolute;
+  width: 40vw;
+  height: 80vh;
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  border-radius: 15px;
+  overflow: hidden;
+  background-color: ${(props) => props.theme.black.lighter};
+`;
+
+const BigCover = styled.div`
+  width: 100%;
+  height: 300px;
+  background-size: cover;
+  background-position: center center;
+`;
+
+const BigTitle = styled.h3`
+  color: ${(props) => props.theme.white.lighter};
+  padding: 20px;
+  font-size: 46px;
+  position: relative;
+  top: -180px;
+`;
+
+const BigOverview = styled.p`
+  padding: 20px;
+  position: relative;
+  top: -180px;
+  color: ${(props) => props.theme.white.lighter};
+  h5 {
+    font-size: 24px;
+    margin-bottom: 10px;
   }
 `;
 
@@ -164,13 +250,17 @@ const infoVariants = {
 const offset = 6;
 
 function Home() {
+  const [volumeOn, setVolumeOn] = useState(false);
+  const navigate = useNavigate();
+  const bigMovieMatch = useMatch("/movies/:movieId");
   const { data, isLoading } = useQuery<IGetMoviesResult>(
     ["movies", "nowPlaying"],
     getMovies
   );
-  console.log(data);
+  console.log(data?.results);
   const [index, setIndex] = useState(0);
   const [leaving, setLeaving] = useState(false);
+  const { scrollY } = useScroll();
 
   const increaseIndex = () => {
     if (data) {
@@ -183,6 +273,18 @@ function Home() {
   };
 
   const toggleLeaving = () => setLeaving((prev) => !prev);
+  const toggleVolume = () => setVolumeOn((prev) => !prev);
+  const onBoxClicked = (movieId: number) => {
+    navigate(`/movies/${movieId}`);
+  };
+  const onMoveHome = () => {
+    navigate("/");
+  };
+  const clickedMovie =
+    bigMovieMatch?.params.movieId &&
+    data?.results.find(
+      (movie) => movie.id + "" === bigMovieMatch.params.movieId
+    );
   return (
     <Wrapper>
       {isLoading ? (
@@ -211,6 +313,8 @@ function Home() {
                   .slice(offset * index, offset * index + offset)
                   .map((movie) => (
                     <Box
+                      layoutId={movie.id + ""}
+                      onClick={() => onBoxClicked(movie.id)}
                       key={movie.id}
                       variants={boxVariants}
                       initial="normal"
@@ -246,6 +350,64 @@ function Home() {
               </Row>
             </AnimatePresence>
           </Slider>
+          <AnimatePresence>
+            {bigMovieMatch ? (
+              <>
+                <Overlay
+                  onClick={onMoveHome}
+                  exit={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                />
+                <BigMovie
+                  style={{ top: scrollY.get() + 100 }}
+                  layoutId={bigMovieMatch.params.movieId}
+                >
+                  {clickedMovie && (
+                    <>
+                      <BigCover
+                        style={{
+                          backgroundImage: `linear-gradient(to top, black, transparent), url(${makeImagePath(
+                            clickedMovie.backdrop_path,
+                            "w500"
+                          )})`,
+                        }}
+                      >
+                        <Btn onClick={onMoveHome} className="cancel">
+                          <MdOutlineCancel />
+                        </Btn>
+                      </BigCover>
+                      <BigTitle>{clickedMovie.title}</BigTitle>
+                      <BtnWrapper className="modal">
+                        <BtnColumn>
+                          <Btn className="play modal">
+                            <BsFillPlayFill size={36} />
+                            재생
+                          </Btn>
+                          <Btn>
+                            <BsPlus />
+                          </Btn>
+                          <Btn>
+                            <HiOutlineThumbUp />
+                          </Btn>
+                        </BtnColumn>
+                        <BtnColumn>
+                          <Btn onClick={toggleVolume}>
+                            {volumeOn ? <BsVolumeUp /> : <BsVolumeMute />}
+                          </Btn>
+                        </BtnColumn>
+                      </BtnWrapper>
+
+                      <BigOverview>
+                        <h5>개봉일 : {clickedMovie.release_date}</h5>
+                        <h5>평점 : {clickedMovie.vote_average}</h5>
+                        {clickedMovie.overview}
+                      </BigOverview>
+                    </>
+                  )}
+                </BigMovie>
+              </>
+            ) : null}
+          </AnimatePresence>
         </>
       )}
     </Wrapper>
