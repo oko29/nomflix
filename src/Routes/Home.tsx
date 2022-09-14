@@ -4,6 +4,9 @@ import { useQuery } from "react-query";
 import { getMovies, IGetMoviesResult } from "../api";
 import { makeImagePath } from "../utils";
 import { useState } from "react";
+import { BsFillPlayFill, BsPlus } from "react-icons/bs";
+import { FiChevronDown } from "react-icons/fi";
+import { HiOutlineThumbUp } from "react-icons/hi";
 
 const Wrapper = styled.div`
   background: black;
@@ -49,11 +52,75 @@ const Row = styled(motion.div)`
   width: 100%;
 `;
 const Box = styled(motion.div)<{ bgPhoto: string }>`
+  position: relative;
   height: 200px;
   background-color: white;
   background-image: url(${(props) => props.bgPhoto});
   background-size: cover;
   background-position: center center;
+  font-size: 66px;
+  &:first-child {
+    transform-origin: center left;
+  }
+  &:last-child {
+    transform-origin: center right;
+  }
+  &:hover {
+    z-index: 5;
+  }
+`;
+
+const Info = styled(motion.div)`
+  width: 100%;
+
+  position: absolute;
+  bottom: -120px;
+  padding: 10px;
+  background-color: ${(props) => props.theme.black.lighter};
+  opacity: 0;
+  color: white;
+  h4 {
+    text-align: center;
+    font-size: 18px;
+    margin-bottom: 5px;
+  }
+  h5 {
+    font-size: 14px;
+    margin-bottom: 5px;
+  }
+`;
+
+const BtnWrapper = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+`;
+const BtnColumn = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+const Btn = styled.button`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 5px;
+  font-size: 36px;
+  border: 1px solid lightgray;
+  color: white;
+  background-color: transparent;
+  cursor: pointer;
+  &.play {
+    background-color: whitesmoke;
+    color: black;
+  }
+  &:hover {
+    border-color: white;
+  }
 `;
 
 const rowVariants = {
@@ -68,6 +135,32 @@ const rowVariants = {
   },
 };
 
+const boxVariants = {
+  normal: {
+    scale: 1,
+  },
+  hover: {
+    scale: 1.5,
+    y: -80,
+    transition: {
+      delay: 0.5,
+      duration: 0.3,
+      type: "tween",
+    },
+  },
+};
+
+const infoVariants = {
+  hover: {
+    opacity: 1,
+    transition: {
+      delay: 0.5,
+      duration: 0.3,
+      type: "tween",
+    },
+  },
+};
+
 const offset = 6;
 
 function Home() {
@@ -75,7 +168,7 @@ function Home() {
     ["movies", "nowPlaying"],
     getMovies
   );
-
+  console.log(data);
   const [index, setIndex] = useState(0);
   const [leaving, setLeaving] = useState(false);
 
@@ -88,6 +181,7 @@ function Home() {
       setIndex((prev) => (prev === maxIndex ? 0 : prev + 1));
     }
   };
+
   const toggleLeaving = () => setLeaving((prev) => !prev);
   return (
     <Wrapper>
@@ -118,8 +212,36 @@ function Home() {
                   .map((movie) => (
                     <Box
                       key={movie.id}
+                      variants={boxVariants}
+                      initial="normal"
+                      whileHover="hover"
+                      transition={{ type: "tween" }}
                       bgPhoto={makeImagePath(movie.backdrop_path, "w500")}
-                    />
+                    >
+                      <Info variants={infoVariants}>
+                        <BtnWrapper>
+                          <BtnColumn>
+                            <Btn className="play">
+                              <BsFillPlayFill />
+                            </Btn>
+                            <Btn>
+                              <BsPlus />
+                            </Btn>
+                            <Btn>
+                              <HiOutlineThumbUp />
+                            </Btn>
+                          </BtnColumn>
+                          <BtnColumn>
+                            <Btn>
+                              <FiChevronDown />
+                            </Btn>
+                          </BtnColumn>
+                        </BtnWrapper>
+                        <h4>{movie.title}</h4>
+                        <h5>개봉일 : {movie.release_date}</h5>
+                        <h5>평점 : {movie.vote_average}</h5>
+                      </Info>
+                    </Box>
                   ))}
               </Row>
             </AnimatePresence>

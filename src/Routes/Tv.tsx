@@ -1,5 +1,5 @@
 function Tv() {
-  return <h1>안녕</h1>;
+  return <div>안녕</div>;
 }
 
 export default Tv;
